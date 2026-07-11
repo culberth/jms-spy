@@ -6,6 +6,8 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
@@ -46,27 +48,67 @@
         <Label fx:id="connectionStatusLabel" text="Disconnected"/>
     </HBox>
 
-    <HBox alignment="CENTER_LEFT" spacing="10.0">
-        <Label text="Destination"/>
-        <TextField fx:id="destinationField" promptText="employee-events" HBox.hgrow="ALWAYS"/>
-        <RadioButton fx:id="queueRadio" text="Queue">
-            <toggleGroup>
-                <ToggleGroup fx:id="destinationTypeGroup"/>
-            </toggleGroup>
-        </RadioButton>
-        <RadioButton fx:id="topicRadio" text="Topic" toggleGroup="$destinationTypeGroup"/>
-        <Button fx:id="listenButton" text="Listen" onAction="#toggleListening" prefWidth="110.0" disable="true"/>
-    </HBox>
+    <TabPane VBox.vgrow="ALWAYS">
+        <Tab text="Subscribe" closable="false">
+            <VBox spacing="10.0">
+                <padding>
+                    <Insets bottom="10.0" left="0.0" right="0.0" top="10.0"/>
+                </padding>
 
-    <HBox alignment="CENTER_LEFT" spacing="15.0">
-        <Label text="On new message:"/>
-        <RadioButton fx:id="appendRadio" text="Append">
-            <toggleGroup>
-                <ToggleGroup fx:id="displayModeGroup"/>
-            </toggleGroup>
-        </RadioButton>
-        <RadioButton fx:id="replaceRadio" text="Replace" toggleGroup="$displayModeGroup"/>
-    </HBox>
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <Label text="Destination"/>
+                    <TextField fx:id="destinationField" promptText="employee-events" HBox.hgrow="ALWAYS"/>
+                    <RadioButton fx:id="queueRadio" text="Queue">
+                        <toggleGroup>
+                            <ToggleGroup fx:id="destinationTypeGroup"/>
+                        </toggleGroup>
+                    </RadioButton>
+                    <RadioButton fx:id="topicRadio" text="Topic" toggleGroup="$destinationTypeGroup"/>
+                    <Button fx:id="listenButton" text="Listen" onAction="#toggleListening" prefWidth="110.0"
+                            disable="true"/>
+                </HBox>
 
-    <TextArea fx:id="messageArea" editable="false" wrapText="true" VBox.vgrow="ALWAYS"/>
+                <HBox alignment="CENTER_LEFT" spacing="15.0">
+                    <Label text="On new message:"/>
+                    <RadioButton fx:id="appendRadio" text="Append">
+                        <toggleGroup>
+                            <ToggleGroup fx:id="displayModeGroup"/>
+                        </toggleGroup>
+                    </RadioButton>
+                    <RadioButton fx:id="replaceRadio" text="Replace" toggleGroup="$displayModeGroup"/>
+                </HBox>
+
+                <TextArea fx:id="messageArea" editable="false" wrapText="true" VBox.vgrow="ALWAYS"/>
+            </VBox>
+        </Tab>
+
+        <Tab text="Publish" closable="false">
+            <VBox spacing="10.0">
+                <padding>
+                    <Insets bottom="10.0" left="0.0" right="0.0" top="10.0"/>
+                </padding>
+
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <Label text="Destination"/>
+                    <TextField fx:id="publishDestinationField" promptText="employee-events" HBox.hgrow="ALWAYS"/>
+                    <RadioButton fx:id="publishQueueRadio" text="Queue">
+                        <toggleGroup>
+                            <ToggleGroup fx:id="publishDestinationTypeGroup"/>
+                        </toggleGroup>
+                    </RadioButton>
+                    <RadioButton fx:id="publishTopicRadio" text="Topic"
+                                 toggleGroup="$publishDestinationTypeGroup"/>
+                </HBox>
+
+                <TextArea fx:id="messageToPublishArea" promptText="Message body to send" wrapText="true"
+                          VBox.vgrow="ALWAYS"/>
+
+                <HBox alignment="CENTER_LEFT" spacing="10.0">
+                    <Button fx:id="publishButton" text="Publish" onAction="#publish" prefWidth="110.0"
+                            disable="true"/>
+                    <Label fx:id="publishStatusLabel"/>
+                </HBox>
+            </VBox>
+        </Tab>
+    </TabPane>
 </VBox>

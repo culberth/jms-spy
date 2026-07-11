@@ -6,6 +6,7 @@ import jakarta.jms.Destination;
 import jakarta.jms.JMSException;
 import jakarta.jms.MessageConsumer;
 import jakarta.jms.MessageListener;
+import jakarta.jms.MessageProducer;
 import jakarta.jms.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
@@ -50,6 +51,22 @@ class JmsConnectionService
                 : session.createQueue(destinationName);
         consumer = session.createConsumer(destination);
         consumer.setMessageListener(listener);
+    }
+
+    synchronized void publish(String destinationName, DestinationType destinationType, String body) throws JMSException
+    {
+        if (session == null)
+        {
+            throw new IllegalStateException("Not connected to a broker");
+        }
+
+        Destination destination = destinationType == DestinationType.TOPIC
+                ? session.createTopic(destinationName)
+                : session.createQueue(destinationName);
+        try (MessageProducer producer = session.createProducer(destination))
+        {
+            producer.send(session.createTextMessage(body));
+        }
     }
 
     synchronized void stopListening()

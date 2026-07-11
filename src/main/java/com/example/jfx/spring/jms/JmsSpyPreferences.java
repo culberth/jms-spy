@@ -1,12 +1,14 @@
 package com.example.jfx.spring.jms;
 
-public record JmsSpyPreferences(String brokerUrl, String username, String destination,
-        DestinationType destinationType, boolean appendMode, boolean darkMode)
+public record JmsSpyPreferences(String brokerUrl, String username, String subscribeDestination,
+        DestinationType subscribeDestinationType, boolean appendMode, boolean darkMode, String publishDestination,
+        DestinationType publishDestinationType)
 {
 
     static JmsSpyPreferences defaults()
     {
-        return new JmsSpyPreferences(defaultBrokerUrl(), defaultUsername(), "", DestinationType.QUEUE, true, false);
+        return new JmsSpyPreferences(defaultBrokerUrl(), defaultUsername(), "", DestinationType.QUEUE, true, false,
+                "", DestinationType.QUEUE);
     }
 
     /**

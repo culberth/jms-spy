@@ -47,10 +47,12 @@ class UserPreferencesStore
         return new JmsSpyPreferences(
                 properties.getProperty("brokerUrl", JmsSpyPreferences.defaultBrokerUrl()),
                 properties.getProperty("username", JmsSpyPreferences.defaultUsername()),
-                properties.getProperty("destination", ""),
-                parseDestinationType(properties.getProperty("destinationType")),
+                properties.getProperty("subscribeDestination", ""),
+                parseDestinationType(properties.getProperty("subscribeDestinationType")),
                 Boolean.parseBoolean(properties.getProperty("appendMode", "true")),
-                Boolean.parseBoolean(properties.getProperty("darkMode", "false")));
+                Boolean.parseBoolean(properties.getProperty("darkMode", "false")),
+                properties.getProperty("publishDestination", ""),
+                parseDestinationType(properties.getProperty("publishDestinationType")));
     }
 
     private DestinationType parseDestinationType(String value)
@@ -70,10 +72,12 @@ class UserPreferencesStore
         var properties = new Properties();
         properties.setProperty("brokerUrl", preferences.brokerUrl());
         properties.setProperty("username", preferences.username());
-        properties.setProperty("destination", preferences.destination());
-        properties.setProperty("destinationType", preferences.destinationType().name());
+        properties.setProperty("subscribeDestination", preferences.subscribeDestination());
+        properties.setProperty("subscribeDestinationType", preferences.subscribeDestinationType().name());
         properties.setProperty("appendMode", Boolean.toString(preferences.appendMode()));
         properties.setProperty("darkMode", Boolean.toString(preferences.darkMode()));
+        properties.setProperty("publishDestination", preferences.publishDestination());
+        properties.setProperty("publishDestinationType", preferences.publishDestinationType().name());
 
         try
         {

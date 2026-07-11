@@ -55,6 +55,18 @@ public class PrimaryController
     private RadioButton replaceRadio;
     @FXML
     private TextArea messageArea;
+    @FXML
+    private TextField publishDestinationField;
+    @FXML
+    private RadioButton publishQueueRadio;
+    @FXML
+    private RadioButton publishTopicRadio;
+    @FXML
+    private TextArea messageToPublishArea;
+    @FXML
+    private Button publishButton;
+    @FXML
+    private Label publishStatusLabel;
 
     @FXML
     private void initialize()
@@ -66,16 +78,20 @@ public class PrimaryController
         {
             passwordField.setText(JmsSpyPreferences.defaultPassword());
         }
-        destinationField.setText(preferences.destination());
-        queueRadio.setSelected(preferences.destinationType() == DestinationType.QUEUE);
-        topicRadio.setSelected(preferences.destinationType() == DestinationType.TOPIC);
+        destinationField.setText(preferences.subscribeDestination());
+        queueRadio.setSelected(preferences.subscribeDestinationType() == DestinationType.QUEUE);
+        topicRadio.setSelected(preferences.subscribeDestinationType() == DestinationType.TOPIC);
         appendRadio.setSelected(preferences.appendMode());
         replaceRadio.setSelected(!preferences.appendMode());
         darkModeCheckBox.setSelected(preferences.darkMode());
         applyTheme(preferences.darkMode());
+        publishDestinationField.setText(preferences.publishDestination());
+        publishQueueRadio.setSelected(preferences.publishDestinationType() == DestinationType.QUEUE);
+        publishTopicRadio.setSelected(preferences.publishDestinationType() == DestinationType.TOPIC);
 
         appendRadio.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
         queueRadio.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
+        publishQueueRadio.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
         darkModeCheckBox.selectedProperty().addListener((observable, wasDark, isDark) ->
         {
             applyTheme(isDark);
@@ -99,6 +115,7 @@ public class PrimaryController
             connectionStatusLabel.setText("Disconnected");
             listenButton.setText("Listen");
             listenButton.setDisable(true);
+            publishButton.setDisable(true);
             return;
         }
 
@@ -109,6 +126,7 @@ public class PrimaryController
             connectButton.setText("Disconnect");
             connectionStatusLabel.setText("Connected to " + brokerUrl);
             listenButton.setDisable(false);
+            publishButton.setDisable(false);
             savePreferences();
         }
         catch (JMSException | RuntimeException ex)
@@ -146,6 +164,30 @@ public class PrimaryController
         {
             log.error("Failed to listen to {} {}", destinationType, destination, ex);
             connectionStatusLabel.setText("Listen failed: " + ex.getMessage());
+        }
+    }
+
+    @FXML
+    private void publish()
+    {
+        var destination = publishDestinationField.getText();
+        if (!StringUtils.hasText(destination))
+        {
+            publishStatusLabel.setText("Enter a destination name before publishing");
+            return;
+        }
+
+        var destinationType = publishQueueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC;
+        try
+        {
+            jmsConnectionService.publish(destination, destinationType, messageToPublishArea.getText());
+            publishStatusLabel.setText("Published to " + destination);
+            savePreferences();
+        }
+        catch (JMSException | RuntimeException ex)
+        {
+            log.error("Failed to publish to {} {}", destinationType, destination, ex);
+            publishStatusLabel.setText("Publish failed: " + ex.getMessage());
         }
     }
 
@@ -190,6 +232,8 @@ public class PrimaryController
                 destinationField.getText(),
                 queueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC,
                 appendRadio.isSelected(),
-                darkModeCheckBox.isSelected()));
+                darkModeCheckBox.isSelected(),
+                publishDestinationField.getText(),
+                publishQueueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC));
     }
 }

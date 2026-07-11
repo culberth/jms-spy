@@ -53,9 +53,9 @@ if (Test-Path $DestDir) { Remove-Item -Recurse -Force $DestDir }
     --app-version $AppVersion `
     --vendor "eljaiek" `
     --description "Demo project for Spring Boot and JavaFX" `
-    --add-launcher "${AppName}Console=$ConsoleLauncherProps"
+    --add-launcher "${AppName}_with_Console=$ConsoleLauncherProps"
 if ($LASTEXITCODE -ne 0) { throw "jpackage failed" }
 
 Write-Host "Done:"
 Write-Host "  $DestDir\$AppName\$AppName.exe          (no console)"
-Write-Host "  $DestDir\$AppName\${AppName}Console.exe  (with console)"
+Write-Host "  $DestDir\$AppName\${AppName}_with_Console.exe  (with console)"
