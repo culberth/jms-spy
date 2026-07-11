@@ -1,0 +1,195 @@
+package com.example.jfx.spring.jms;
+
+import jakarta.jms.JMSException;
+import jakarta.jms.Message;
+import jakarta.jms.TextMessage;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
+
+@Slf4j
+@Controller
+@RequiredArgsConstructor
+public class PrimaryController
+{
+
+    private final JmsConnectionService jmsConnectionService;
+    private final UserPreferencesStore preferencesStore;
+
+    @FXML
+    private VBox rootPane;
+    @FXML
+    private CheckBox darkModeCheckBox;
+    @FXML
+    private TextField brokerUrlField;
+    @FXML
+    private TextField usernameField;
+    @FXML
+    private PasswordField passwordField;
+    @FXML
+    private Button connectButton;
+    @FXML
+    private Label connectionStatusLabel;
+    @FXML
+    private TextField destinationField;
+    @FXML
+    private RadioButton queueRadio;
+    @FXML
+    private RadioButton topicRadio;
+    @FXML
+    private Button listenButton;
+    @FXML
+    private RadioButton appendRadio;
+    @FXML
+    private RadioButton replaceRadio;
+    @FXML
+    private TextArea messageArea;
+
+    @FXML
+    private void initialize()
+    {
+        var preferences = preferencesStore.load();
+        brokerUrlField.setText(preferences.brokerUrl());
+        usernameField.setText(preferences.username());
+        if (!preferencesStore.hasSavedConfig())
+        {
+            passwordField.setText(JmsSpyPreferences.defaultPassword());
+        }
+        destinationField.setText(preferences.destination());
+        queueRadio.setSelected(preferences.destinationType() == DestinationType.QUEUE);
+        topicRadio.setSelected(preferences.destinationType() == DestinationType.TOPIC);
+        appendRadio.setSelected(preferences.appendMode());
+        replaceRadio.setSelected(!preferences.appendMode());
+        darkModeCheckBox.setSelected(preferences.darkMode());
+        applyTheme(preferences.darkMode());
+
+        appendRadio.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
+        queueRadio.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
+        darkModeCheckBox.selectedProperty().addListener((observable, wasDark, isDark) ->
+        {
+            applyTheme(isDark);
+            savePreferences();
+        });
+    }
+
+    private void applyTheme(boolean dark)
+    {
+        var stylesheet = dark ? "/dark-theme.css" : "/light-theme.css";
+        rootPane.getStylesheets().setAll(getClass().getResource(stylesheet).toExternalForm());
+    }
+
+    @FXML
+    private void toggleConnection()
+    {
+        if (jmsConnectionService.isConnected())
+        {
+            jmsConnectionService.disconnect();
+            connectButton.setText("Connect");
+            connectionStatusLabel.setText("Disconnected");
+            listenButton.setText("Listen");
+            listenButton.setDisable(true);
+            return;
+        }
+
+        var brokerUrl = brokerUrlField.getText();
+        try
+        {
+            jmsConnectionService.connect(brokerUrl, usernameField.getText(), passwordField.getText());
+            connectButton.setText("Disconnect");
+            connectionStatusLabel.setText("Connected to " + brokerUrl);
+            listenButton.setDisable(false);
+            savePreferences();
+        }
+        catch (JMSException | RuntimeException ex)
+        {
+            log.error("Failed to connect to broker {}", brokerUrl, ex);
+            connectionStatusLabel.setText("Connection failed: " + ex.getMessage());
+        }
+    }
+
+    @FXML
+    private void toggleListening()
+    {
+        if (jmsConnectionService.isListening())
+        {
+            jmsConnectionService.stopListening();
+            listenButton.setText("Listen");
+            return;
+        }
+
+        var destination = destinationField.getText();
+        if (!StringUtils.hasText(destination))
+        {
+            connectionStatusLabel.setText("Enter a destination name before listening");
+            return;
+        }
+
+        var destinationType = queueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC;
+        try
+        {
+            jmsConnectionService.listen(destination, destinationType, this::onMessageReceived);
+            listenButton.setText("Stop");
+            savePreferences();
+        }
+        catch (JMSException | RuntimeException ex)
+        {
+            log.error("Failed to listen to {} {}", destinationType, destination, ex);
+            connectionStatusLabel.setText("Listen failed: " + ex.getMessage());
+        }
+    }
+
+    private void onMessageReceived(Message message)
+    {
+        var content = extractContent(message);
+        Platform.runLater(() ->
+        {
+            if (appendRadio.isSelected())
+            {
+                messageArea.appendText(content + System.lineSeparator());
+            }
+            else
+            {
+                messageArea.setText(content);
+            }
+        });
+    }
+
+    private String extractContent(Message message)
+    {
+        try
+        {
+            if (message instanceof TextMessage textMessage)
+            {
+                return textMessage.getText();
+            }
+            return message.toString();
+        }
+        catch (JMSException ex)
+        {
+            log.error("Failed to read message content", ex);
+            return "<unreadable message: " + ex.getMessage() + ">";
+        }
+    }
+
+    private void savePreferences()
+    {
+        preferencesStore.save(new JmsSpyPreferences(
+                brokerUrlField.getText(),
+                usernameField.getText(),
+                destinationField.getText(),
+                queueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC,
+                appendRadio.isSelected(),
+                darkModeCheckBox.isSelected()));
+    }
+}

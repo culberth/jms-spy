@@ -1,0 +1,11 @@
+.root {
+    -fx-base: #f4f4f4;
+    -fx-background: #f4f4f4;
+    -fx-control-inner-background: #ffffff;
+    -fx-text-fill: #222222;
+    -fx-accent: #1a73e8;
+}
+
+.label {
+    -fx-text-fill: #222222;
+}
