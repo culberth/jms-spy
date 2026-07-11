@@ -13,8 +13,11 @@ import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Owns the lifecycle of a single JMS connection/session/consumer to an Artemis broker.
+ * Owns the lifecycle of a single JMS connection/session/consumer(s) to an Artemis broker.
  */
 @Slf4j
 @Component
@@ -23,7 +26,7 @@ class JmsConnectionService
 
     private Connection connection;
     private Session session;
-    private MessageConsumer consumer;
+    private final List<MessageConsumer> consumers = new ArrayList<>();
 
     synchronized void connect(String brokerUrl, String username, String password) throws JMSException
     {
@@ -37,8 +40,8 @@ class JmsConnectionService
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
     }
 
-    synchronized void listen(String destinationName, DestinationType destinationType, MessageListener listener)
-            throws JMSException
+    synchronized void listen(List<String> destinationNames, DestinationType destinationType,
+            MessageListener listener) throws JMSException
     {
         if (session == null)
         {
@@ -46,11 +49,23 @@ class JmsConnectionService
         }
 
         stopListening();
-        Destination destination = destinationType == DestinationType.TOPIC
-                ? session.createTopic(destinationName)
-                : session.createQueue(destinationName);
-        consumer = session.createConsumer(destination);
-        consumer.setMessageListener(listener);
+        try
+        {
+            for (String destinationName : destinationNames)
+            {
+                Destination destination = destinationType == DestinationType.TOPIC
+                        ? session.createTopic(destinationName)
+                        : session.createQueue(destinationName);
+                MessageConsumer consumer = session.createConsumer(destination);
+                consumer.setMessageListener(listener);
+                consumers.add(consumer);
+            }
+        }
+        catch (JMSException ex)
+        {
+            stopListening();
+            throw ex;
+        }
     }
 
     synchronized void publish(String destinationName, DestinationType destinationType, String body) throws JMSException
@@ -71,7 +86,7 @@ class JmsConnectionService
 
     synchronized void stopListening()
     {
-        if (consumer != null)
+        for (MessageConsumer consumer : consumers)
         {
             try
             {
@@ -81,8 +96,8 @@ class JmsConnectionService
             {
                 log.warn("Failed to close consumer", ex);
             }
-            consumer = null;
         }
+        consumers.clear();
     }
 
     @PreDestroy
@@ -124,6 +139,6 @@ class JmsConnectionService
 
     synchronized boolean isListening()
     {
-        return consumer != null;
+        return !consumers.isEmpty();
     }
 }

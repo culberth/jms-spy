@@ -2,7 +2,9 @@ package com.example.jfx.spring.jms;
 
 import jakarta.jms.JMSException;
 import jakarta.jms.Message;
+import jakarta.jms.Queue;
 import jakarta.jms.TextMessage;
+import jakarta.jms.Topic;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -17,6 +19,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Slf4j
 @Controller
@@ -146,25 +151,30 @@ public class PrimaryController
             return;
         }
 
-        var destination = destinationField.getText();
-        if (!StringUtils.hasText(destination))
+        var destinations = parseDestinationList(destinationField.getText());
+        if (destinations.isEmpty())
         {
-            connectionStatusLabel.setText("Enter a destination name before listening");
+            connectionStatusLabel.setText("Enter at least one destination name before listening");
             return;
         }
 
         var destinationType = queueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC;
         try
         {
-            jmsConnectionService.listen(destination, destinationType, this::onMessageReceived);
+            jmsConnectionService.listen(destinations, destinationType, this::onMessageReceived);
             listenButton.setText("Stop");
             savePreferences();
         }
         catch (JMSException | RuntimeException ex)
         {
-            log.error("Failed to listen to {} {}", destinationType, destination, ex);
+            log.error("Failed to listen to {} {}", destinationType, destinations, ex);
             connectionStatusLabel.setText("Listen failed: " + ex.getMessage());
         }
+    }
+
+    private List<String> parseDestinationList(String text)
+    {
+        return Arrays.stream(text.split(",")).map(String::trim).filter(StringUtils::hasText).toList();
     }
 
     @FXML
@@ -193,18 +203,39 @@ public class PrimaryController
 
     private void onMessageReceived(Message message)
     {
-        var content = extractContent(message);
+        var line = "[" + extractDestinationName(message) + "] " + extractContent(message);
         Platform.runLater(() ->
         {
             if (appendRadio.isSelected())
             {
-                messageArea.appendText(content + System.lineSeparator());
+                messageArea.appendText(line + System.lineSeparator());
             }
             else
             {
-                messageArea.setText(content);
+                messageArea.setText(line);
             }
         });
+    }
+
+    private String extractDestinationName(Message message)
+    {
+        try
+        {
+            var destination = message.getJMSDestination();
+            if (destination instanceof Queue queue)
+            {
+                return queue.getQueueName();
+            }
+            if (destination instanceof Topic topic)
+            {
+                return topic.getTopicName();
+            }
+            return "?";
+        }
+        catch (JMSException ex)
+        {
+            return "?";
+        }
     }
 
     private String extractContent(Message message)

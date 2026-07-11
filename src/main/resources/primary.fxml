@@ -56,8 +56,9 @@
                 </padding>
 
                 <HBox alignment="CENTER_LEFT" spacing="10.0">
-                    <Label text="Destination"/>
-                    <TextField fx:id="destinationField" promptText="employee-events" HBox.hgrow="ALWAYS"/>
+                    <Label text="Destinations"/>
+                    <TextField fx:id="destinationField" promptText="employee-events, item-events"
+                               HBox.hgrow="ALWAYS"/>
                     <RadioButton fx:id="queueRadio" text="Queue">
                         <toggleGroup>
                             <ToggleGroup fx:id="destinationTypeGroup"/>
