@@ -10,9 +10,15 @@
 $ErrorActionPreference = "Stop"
 
 $AppName = "JmsSpy"
-$AppVersion = "0.0.1"
 $MainClass = "com.example.jfx.spring.jms.MainApplication"
-$JarName = "jms-spy-0.0.1-SNAPSHOT.jar"
+
+$PomContent = Get-Content pom.xml -Raw
+if ($PomContent -notmatch '(?s)</parent>.*?<version>([^<]+)</version>') {
+    throw "Could not determine project version from pom.xml"
+}
+$ProjectVersion = $Matches[1]
+$AppVersion = $ProjectVersion -replace '-SNAPSHOT$', ''
+$JarName = "jms-spy-$ProjectVersion.jar"
 
 Write-Host "Building application jar..."
 & mvn -q clean package -DskipTests
