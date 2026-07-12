@@ -11,7 +11,7 @@
     
     <groupId>com.example.jfx.spring.jms</groupId>
     <artifactId>jms-spy</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
     <name>jms-spy</name>
     <description>Demo project for Spring Boot and JFX</description>
 
