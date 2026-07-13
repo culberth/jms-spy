@@ -1,5 +1,7 @@
 # 📄 jms-spy
 
+![JMS Spy screenshot](docs/screenshot.png)
+
 ## 🛠️ Build instructions
 
 Build and run (Maven wrapper is not present; use system `mvn`):
