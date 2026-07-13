@@ -1,6 +1,6 @@
-# jms-spy
+# 📄 jms-spy
 
-## Commands
+## 🚀 Usage instructions
 
 Build and run (Maven wrapper is not present; use system `mvn`):
 
