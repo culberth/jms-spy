@@ -1,6 +1,6 @@
 # 📄 jms-spy
 
-## 🚀 Usage instructions
+## 🛠️ Build instructions
 
 Build and run (Maven wrapper is not present; use system `mvn`):
 
@@ -16,7 +16,7 @@ Package a standalone Windows executable (requires JDK 14+ for `jpackage`, run fr
 ```
 This produces `target\dist\JmsSpy\JmsSpy.exe` (no console) and `target\dist\JmsSpy\JmsSpyConsole.exe` (with console). Both bundle their own JRE. The script builds the jar, copies runtime dependencies (dropping Lombok, which is compile-time only) into `target\jpackage-input`, and invokes `jpackage` with two launchers sharing one app image.
 
-## Usage
+## 🚀 Usage instructions
 
 1. **Connect** — enter the broker URL, and optionally a username/password, then click **Connect**. On first run (no `~/.jms-spy/config.properties` yet), these three fields default to the `SPRING_ARTEMIS_BROKER_URL`/`SPRING_ARTEMIS_USER`/`SPRING_ARTEMIS_PASSWORD` env vars if set — the same ones `item-server`/`employee-server` use (see the root repo's `docker-compose.yml`/Helm charts) — and are left blank otherwise.
 2. Pick the **Subscribe** or **Publish** tab:
@@ -28,7 +28,7 @@ This produces `target\dist\JmsSpy\JmsSpy.exe` (no console) and `target\dist\JmsS
 3. **Dark Mode** — the checkbox in the top-right corner swaps between `light-theme.css` and `dark-theme.css`, applied to the whole window immediately.
 4. Broker URL, username, both tabs' destination name/type, append/replace choice, and dark mode are remembered between runs (see `UserPreferencesStore` below); the password is never saved and must be re-entered each session.
 
-## Architecture
+## ⚙️ Architecture
 
 This is a Spring Boot + JavaFX desktop app (Java 21) that connects to an Apache ActiveMQ Artemis broker and displays messages received on a JMS queue or topic. All source lives under the single package `com.example.jfx.spring.jms`.
 
