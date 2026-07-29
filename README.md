@@ -12,11 +12,11 @@ Build and run (Maven wrapper is not present; use system `mvn`):
 - Run a single test class: `mvn test -Dtest=MainApplicationTests`
 - Run a single test method: `mvn test -Dtest=MainApplicationTests#givenApplicationContextIsLoadedThenJmsConnectionServiceShouldNotBeNull`
 
-Package a standalone Windows executable (requires JDK 14+ for `jpackage`, run from repo root in PowerShell):
+Package a standalone Windows executable (requires a full JDK 14+, not just a JRE — `jlink` needs the `jmods` directory — run from repo root in PowerShell):
 ```
 .\jpackage.ps1
 ```
-This produces `target\dist\JmsSpy\JmsSpy.exe` (no console) and `target\dist\JmsSpy\JmsSpyConsole.exe` (with console). Both bundle their own JRE. The script builds the jar, copies runtime dependencies (dropping Lombok, which is compile-time only) into `target\jpackage-input`, and invokes `jpackage` with two launchers sharing one app image.
+This produces `target\dist\JmsSpy\JmsSpy.exe` (no console) and `target\dist\JmsSpy\JmsSpy_with_Console.exe` (with console). Both are fully self-contained and run on a machine with no Java installed. The script builds the jar, copies runtime dependencies (dropping Lombok, which is compile-time only) into `target\jpackage-input`, then runs `jdeps --print-module-deps` against the assembled jar/dependencies to compute the minimal set of JDK modules this app actually uses, adds `jdk.crypto.ec` unconditionally (it's needed for TLS but only pulled in via SPI/reflection at runtime, so `jdeps` can't see it), feeds that module list to `jlink` to build a custom runtime image at `target\runtime`, and finally invokes `jpackage --runtime-image target\runtime` with two launchers sharing one app image.
 
 ## 🚀 Usage instructions
 
