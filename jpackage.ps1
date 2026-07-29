@@ -100,7 +100,7 @@ if (Test-Path $DestDir) { Remove-Item -Recurse -Force $DestDir }
     --main-jar $JarName `
     --main-class $MainClass `
     --app-version $AppVersion `
-    --vendor "eljaiek" `
+    --vendor "Slobberknocker Productions" `
     --description "Demo project for Spring Boot and JavaFX" `
     --runtime-image $RuntimeDir `
     --add-launcher "${AppName}_with_Console=$ConsoleLauncherProps"

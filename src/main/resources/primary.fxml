@@ -4,8 +4,12 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.RadioButton?>
+<?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextArea?>
@@ -20,6 +24,18 @@
     <padding>
         <Insets bottom="15.0" left="15.0" right="15.0" top="15.0"/>
     </padding>
+
+    <MenuBar>
+        <Menu text="File">
+            <MenuItem text="Clear" onAction="#clearOutput"/>
+            <SeparatorMenuItem/>
+            <MenuItem text="Close" onAction="#closeApplication"/>
+        </Menu>
+        <Menu text="Edit"/>
+        <Menu text="Help">
+            <MenuItem text="About" onAction="#showAboutDialog"/>
+        </Menu>
+    </MenuBar>
 
     <HBox alignment="CENTER_RIGHT">
         <CheckBox fx:id="darkModeCheckBox" text="Dark Mode"/>

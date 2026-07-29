@@ -7,6 +7,7 @@ import jakarta.jms.TextMessage;
 import jakarta.jms.Topic;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
@@ -31,6 +32,7 @@ public class PrimaryController
 
     private final JmsConnectionService jmsConnectionService;
     private final UserPreferencesStore preferencesStore;
+    private final AppProperties appProperties;
 
     @FXML
     private VBox rootPane;
@@ -108,6 +110,30 @@ public class PrimaryController
     {
         var stylesheet = dark ? "/dark-theme.css" : "/light-theme.css";
         rootPane.getStylesheets().setAll(getClass().getResource(stylesheet).toExternalForm());
+    }
+
+    @FXML
+    private void clearOutput()
+    {
+        messageArea.clear();
+    }
+
+    @FXML
+    private void closeApplication()
+    {
+        Platform.exit();
+    }
+
+    @FXML
+    private void showAboutDialog()
+    {
+        var alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.initOwner(rootPane.getScene().getWindow());
+        alert.setTitle("About " + appProperties.title());
+        alert.setHeaderText(appProperties.title() + " " + appProperties.version());
+        alert.setContentText("A desktop client for inspecting and publishing messages on an Apache ActiveMQ "
+                + "Artemis JMS queue or topic.\n\nVendor: Slobberknocker Productions");
+        alert.showAndWait();
     }
 
     @FXML
