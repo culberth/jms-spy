@@ -3,6 +3,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Menu?>
 <?import javafx.scene.control.MenuBar?>
@@ -73,8 +74,8 @@
 
                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                     <Label text="Destinations"/>
-                    <TextField fx:id="destinationField" promptText="employee-events, item-events"
-                               HBox.hgrow="ALWAYS"/>
+                    <ComboBox fx:id="destinationCombo" editable="true" promptText="employee-events, item-events"
+                              HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                     <RadioButton fx:id="queueRadio" text="Queue">
                         <toggleGroup>
                             <ToggleGroup fx:id="destinationTypeGroup"/>
@@ -107,7 +108,8 @@
 
                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                     <Label text="Destination"/>
-                    <TextField fx:id="publishDestinationField" promptText="employee-events" HBox.hgrow="ALWAYS"/>
+                    <ComboBox fx:id="publishDestinationCombo" editable="true" promptText="employee-events"
+                              HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                     <RadioButton fx:id="publishQueueRadio" text="Queue">
                         <toggleGroup>
                             <ToggleGroup fx:id="publishDestinationTypeGroup"/>

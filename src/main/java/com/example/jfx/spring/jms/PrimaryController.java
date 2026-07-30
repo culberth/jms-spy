@@ -10,6 +10,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.RadioButton;
@@ -23,6 +24,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Controller
@@ -33,6 +35,7 @@ public class PrimaryController
     private final JmsConnectionService jmsConnectionService;
     private final UserPreferencesStore preferencesStore;
     private final AppProperties appProperties;
+    private final JolokiaClient jolokiaClient;
 
     @FXML
     private VBox rootPane;
@@ -49,7 +52,7 @@ public class PrimaryController
     @FXML
     private Label connectionStatusLabel;
     @FXML
-    private TextField destinationField;
+    private ComboBox<String> destinationCombo;
     @FXML
     private RadioButton queueRadio;
     @FXML
@@ -63,7 +66,7 @@ public class PrimaryController
     @FXML
     private TextArea messageArea;
     @FXML
-    private TextField publishDestinationField;
+    private ComboBox<String> publishDestinationCombo;
     @FXML
     private RadioButton publishQueueRadio;
     @FXML
@@ -85,14 +88,14 @@ public class PrimaryController
         {
             passwordField.setText(JmsSpyPreferences.defaultPassword());
         }
-        destinationField.setText(preferences.subscribeDestination());
+        destinationCombo.setValue(preferences.subscribeDestination());
         queueRadio.setSelected(preferences.subscribeDestinationType() == DestinationType.QUEUE);
         topicRadio.setSelected(preferences.subscribeDestinationType() == DestinationType.TOPIC);
         appendRadio.setSelected(preferences.appendMode());
         replaceRadio.setSelected(!preferences.appendMode());
         darkModeCheckBox.setSelected(preferences.darkMode());
         applyTheme(preferences.darkMode());
-        publishDestinationField.setText(preferences.publishDestination());
+        publishDestinationCombo.setValue(preferences.publishDestination());
         publishQueueRadio.setSelected(preferences.publishDestinationType() == DestinationType.QUEUE);
         publishTopicRadio.setSelected(preferences.publishDestinationType() == DestinationType.TOPIC);
 
@@ -147,6 +150,8 @@ public class PrimaryController
             listenButton.setText("Listen");
             listenButton.setDisable(true);
             publishButton.setDisable(true);
+            destinationCombo.getItems().clear();
+            publishDestinationCombo.getItems().clear();
             return;
         }
 
@@ -159,12 +164,39 @@ public class PrimaryController
             listenButton.setDisable(false);
             publishButton.setDisable(false);
             savePreferences();
+            refreshDestinationList(brokerUrl, usernameField.getText(), passwordField.getText());
         }
         catch (JMSException | RuntimeException ex)
         {
             log.error("Failed to connect to broker {}", brokerUrl, ex);
             connectionStatusLabel.setText("Connection failed: " + ex.getMessage());
         }
+    }
+
+    /**
+     * Looks up the broker's known addresses via Jolokia and offers them as autocomplete
+     * suggestions on both destination combo boxes. Runs off the JavaFX thread since it's a
+     * network call; a failure here is non-fatal, the destination fields stay freely editable.
+     */
+    private void refreshDestinationList(String brokerUrl, String username, String password)
+    {
+        var jolokiaUrl = jolokiaClient.deriveJolokiaUrl(brokerUrl);
+        CompletableFuture.supplyAsync(() ->
+        {
+            try
+            {
+                return jolokiaClient.searchAddresses(jolokiaUrl, username, password);
+            }
+            catch (Exception ex)
+            {
+                log.warn("Failed to search Jolokia addresses at {}", jolokiaUrl, ex);
+                return List.<String>of();
+            }
+        }).thenAccept(addresses -> Platform.runLater(() ->
+        {
+            destinationCombo.getItems().setAll(addresses);
+            publishDestinationCombo.getItems().setAll(addresses);
+        }));
     }
 
     @FXML
@@ -177,7 +209,7 @@ public class PrimaryController
             return;
         }
 
-        var destinations = parseDestinationList(destinationField.getText());
+        var destinations = parseDestinationList(destinationCombo.getEditor().getText());
         if (destinations.isEmpty())
         {
             connectionStatusLabel.setText("Enter at least one destination name before listening");
@@ -206,7 +238,7 @@ public class PrimaryController
     @FXML
     private void publish()
     {
-        var destination = publishDestinationField.getText();
+        var destination = publishDestinationCombo.getEditor().getText();
         if (!StringUtils.hasText(destination))
         {
             publishStatusLabel.setText("Enter a destination name before publishing");
@@ -286,11 +318,11 @@ public class PrimaryController
         preferencesStore.save(new JmsSpyPreferences(
                 brokerUrlField.getText(),
                 usernameField.getText(),
-                destinationField.getText(),
+                destinationCombo.getEditor().getText(),
                 queueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC,
                 appendRadio.isSelected(),
                 darkModeCheckBox.isSelected(),
-                publishDestinationField.getText(),
+                publishDestinationCombo.getEditor().getText(),
                 publishQueueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC));
     }
 }
