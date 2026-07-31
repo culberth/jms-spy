@@ -40,8 +40,7 @@ class JmsConnectionService
         session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
     }
 
-    synchronized void listen(List<String> destinationNames, DestinationType destinationType,
-            MessageListener listener) throws JMSException
+    synchronized void listen(List<String> destinationNames, MessageListener listener) throws JMSException
     {
         if (session == null)
         {
@@ -53,9 +52,7 @@ class JmsConnectionService
         {
             for (String destinationName : destinationNames)
             {
-                Destination destination = destinationType == DestinationType.TOPIC
-                        ? session.createTopic(destinationName)
-                        : session.createQueue(destinationName);
+                Destination destination = session.createTopic(destinationName);
                 MessageConsumer consumer = session.createConsumer(destination);
                 consumer.setMessageListener(listener);
                 consumers.add(consumer);
@@ -68,16 +65,14 @@ class JmsConnectionService
         }
     }
 
-    synchronized void publish(String destinationName, DestinationType destinationType, String body) throws JMSException
+    synchronized void publish(String destinationName, String body) throws JMSException
     {
         if (session == null)
         {
             throw new IllegalStateException("Not connected to a broker");
         }
 
-        Destination destination = destinationType == DestinationType.TOPIC
-                ? session.createTopic(destinationName)
-                : session.createQueue(destinationName);
+        Destination destination = session.createTopic(destinationName);
         try (MessageProducer producer = session.createProducer(destination))
         {
             producer.send(session.createTextMessage(body));

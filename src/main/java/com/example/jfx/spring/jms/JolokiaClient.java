@@ -18,8 +18,8 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 /**
- * Looks up the addresses (queue/topic names) known to an Artemis broker via its Jolokia HTTP
- * management API, so the UI can offer them as autocomplete suggestions for destination fields.
+ * Looks up the topic names known to an Artemis broker via its Jolokia HTTP management API, so
+ * the UI can offer them as autocomplete suggestions for destination fields.
  */
 @Component
 class JolokiaClient
@@ -29,9 +29,13 @@ class JolokiaClient
     // JmsSpyPreferences.defaults() when no config file has been saved yet.
     static final int DEFAULT_JOLOKIA_PORT = 8161;
     static final String DEFAULT_JOLOKIA_PATH = "/console/jolokia";
-    // Matches every address MBean regardless of broker name or routing type (anycast/multicast),
-    // so both queue and topic addresses are returned.
-    static final String DEFAULT_ADDRESS_SEARCH_MBEAN = "org.apache.activemq.artemis:broker=*,component=addresses,address=*";
+    // Matches only multicast (topic) queue MBeans regardless of broker name, since this app only
+    // ever deals in topics - an anycast (queue-only) address wouldn't work here anyway. Standard
+    // Artemis MBean naming uses uppercase routing-type values; adjust in Edit -> Settings if a
+    // particular broker reports it differently.
+    static final String DEFAULT_ADDRESS_SEARCH_MBEAN =
+            "org.apache.activemq.artemis:broker=*,component=addresses,address=*,subcomponent=queues,"
+                    + "routing-type=MULTICAST,queue=*";
 
     private static final Pattern ADDRESS_ATTRIBUTE = Pattern.compile("address=\"([^\"]+)\"");
 

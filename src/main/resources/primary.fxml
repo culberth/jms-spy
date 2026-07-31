@@ -80,15 +80,9 @@
                 </padding>
 
                 <HBox alignment="CENTER_LEFT" spacing="10.0">
-                    <Label text="Destinations"/>
+                    <Label text="Topics"/>
                     <ComboBox fx:id="destinationCombo" editable="true" promptText="employee-events, item-events"
                               HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                    <RadioButton fx:id="queueRadio" text="Queue">
-                        <toggleGroup>
-                            <ToggleGroup fx:id="destinationTypeGroup"/>
-                        </toggleGroup>
-                    </RadioButton>
-                    <RadioButton fx:id="topicRadio" text="Topic" toggleGroup="$destinationTypeGroup"/>
                     <Button fx:id="listenButton" text="Listen" onAction="#toggleListening" prefWidth="110.0"
                             disable="true"/>
                 </HBox>
@@ -114,16 +108,9 @@
                 </padding>
 
                 <HBox alignment="CENTER_LEFT" spacing="10.0">
-                    <Label text="Destination"/>
+                    <Label text="Topic"/>
                     <ComboBox fx:id="publishDestinationCombo" editable="true" promptText="employee-events"
                               HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-                    <RadioButton fx:id="publishQueueRadio" text="Queue">
-                        <toggleGroup>
-                            <ToggleGroup fx:id="publishDestinationTypeGroup"/>
-                        </toggleGroup>
-                    </RadioButton>
-                    <RadioButton fx:id="publishTopicRadio" text="Topic"
-                                 toggleGroup="$publishDestinationTypeGroup"/>
                 </HBox>
 
                 <TextArea fx:id="messageToPublishArea" promptText="Message body to send" wrapText="true"

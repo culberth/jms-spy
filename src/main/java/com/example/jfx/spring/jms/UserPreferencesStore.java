@@ -49,11 +49,9 @@ class UserPreferencesStore
                 resolveBrokerPort(properties),
                 properties.getProperty("username", JmsSpyPreferences.defaultUsername()),
                 properties.getProperty("subscribeDestination", ""),
-                parseDestinationType(properties.getProperty("subscribeDestinationType")),
                 Boolean.parseBoolean(properties.getProperty("appendMode", "true")),
                 Boolean.parseBoolean(properties.getProperty("darkMode", "false")),
                 properties.getProperty("publishDestination", ""),
-                parseDestinationType(properties.getProperty("publishDestinationType")),
                 parseIntOrDefault(properties.getProperty("jolokiaPort"), JolokiaClient.DEFAULT_JOLOKIA_PORT),
                 properties.getProperty("jolokiaPath", JolokiaClient.DEFAULT_JOLOKIA_PATH),
                 properties.getProperty("addressSearchMbean", JolokiaClient.DEFAULT_ADDRESS_SEARCH_MBEAN),
@@ -99,18 +97,6 @@ class UserPreferencesStore
         }
     }
 
-    private DestinationType parseDestinationType(String value)
-    {
-        try
-        {
-            return DestinationType.valueOf(value);
-        }
-        catch (IllegalArgumentException | NullPointerException ex)
-        {
-            return DestinationType.QUEUE;
-        }
-    }
-
     void save(JmsSpyPreferences preferences)
     {
         var properties = new Properties();
@@ -118,11 +104,9 @@ class UserPreferencesStore
         properties.setProperty("brokerPort", Integer.toString(preferences.brokerPort()));
         properties.setProperty("username", preferences.username());
         properties.setProperty("subscribeDestination", preferences.subscribeDestination());
-        properties.setProperty("subscribeDestinationType", preferences.subscribeDestinationType().name());
         properties.setProperty("appendMode", Boolean.toString(preferences.appendMode()));
         properties.setProperty("darkMode", Boolean.toString(preferences.darkMode()));
         properties.setProperty("publishDestination", preferences.publishDestination());
-        properties.setProperty("publishDestinationType", preferences.publishDestinationType().name());
         properties.setProperty("jolokiaPort", Integer.toString(preferences.jolokiaPort()));
         properties.setProperty("jolokiaPath", preferences.jolokiaPath());
         properties.setProperty("addressSearchMbean", preferences.addressSearchMbean());

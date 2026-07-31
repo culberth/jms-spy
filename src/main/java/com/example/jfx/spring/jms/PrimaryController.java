@@ -2,7 +2,6 @@ package com.example.jfx.spring.jms;
 
 import jakarta.jms.JMSException;
 import jakarta.jms.Message;
-import jakarta.jms.Queue;
 import jakarta.jms.TextMessage;
 import jakarta.jms.Topic;
 import javafx.application.Platform;
@@ -64,10 +63,6 @@ public class PrimaryController
     @FXML
     private ComboBox<String> destinationCombo;
     @FXML
-    private RadioButton queueRadio;
-    @FXML
-    private RadioButton topicRadio;
-    @FXML
     private Button listenButton;
     @FXML
     private RadioButton appendRadio;
@@ -77,10 +72,6 @@ public class PrimaryController
     private TextArea messageArea;
     @FXML
     private ComboBox<String> publishDestinationCombo;
-    @FXML
-    private RadioButton publishQueueRadio;
-    @FXML
-    private RadioButton publishTopicRadio;
     @FXML
     private TextArea messageToPublishArea;
     @FXML
@@ -109,19 +100,13 @@ public class PrimaryController
             passwordField.setText(JmsSpyPreferences.defaultPassword());
         }
         destinationCombo.setValue(preferences.subscribeDestination());
-        queueRadio.setSelected(preferences.subscribeDestinationType() == DestinationType.QUEUE);
-        topicRadio.setSelected(preferences.subscribeDestinationType() == DestinationType.TOPIC);
         appendRadio.setSelected(preferences.appendMode());
         replaceRadio.setSelected(!preferences.appendMode());
         darkModeCheckBox.setSelected(preferences.darkMode());
         applyTheme(preferences.darkMode());
         publishDestinationCombo.setValue(preferences.publishDestination());
-        publishQueueRadio.setSelected(preferences.publishDestinationType() == DestinationType.QUEUE);
-        publishTopicRadio.setSelected(preferences.publishDestinationType() == DestinationType.TOPIC);
 
         appendRadio.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
-        queueRadio.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
-        publishQueueRadio.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
         darkModeCheckBox.selectedProperty().addListener((observable, wasDark, isDark) ->
         {
             applyTheme(isDark);
@@ -195,7 +180,7 @@ public class PrimaryController
         alert.setTitle("About " + appProperties.title());
         alert.setHeaderText(appProperties.title() + " " + appProperties.version());
         alert.setContentText("A desktop client for inspecting and publishing messages on an Apache ActiveMQ "
-                + "Artemis JMS queue or topic.\n\nVendor: Slobberknocker Productions");
+                + "Artemis JMS topic.\n\nVendor: Slobberknocker Productions");
         alert.showAndWait();
     }
 
@@ -316,16 +301,15 @@ public class PrimaryController
             return;
         }
 
-        var destinationType = queueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC;
         try
         {
-            jmsConnectionService.listen(destinations, destinationType, this::onMessageReceived);
+            jmsConnectionService.listen(destinations, this::onMessageReceived);
             listenButton.setText("Stop");
             savePreferences();
         }
         catch (JMSException | RuntimeException ex)
         {
-            log.error("Failed to listen to {} {}", destinationType, destinations, ex);
+            log.error("Failed to listen to {}", destinations, ex);
             setConnectionStatus("Listen failed: " + ex.getMessage(), null);
         }
     }
@@ -357,16 +341,15 @@ public class PrimaryController
             return;
         }
 
-        var destinationType = publishQueueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC;
         try
         {
-            jmsConnectionService.publish(destination, destinationType, messageToPublishArea.getText());
+            jmsConnectionService.publish(destination, messageToPublishArea.getText());
             publishStatusLabel.setText("Published to " + destination);
             savePreferences();
         }
         catch (JMSException | RuntimeException ex)
         {
-            log.error("Failed to publish to {} {}", destinationType, destination, ex);
+            log.error("Failed to publish to {}", destination, ex);
             publishStatusLabel.setText("Publish failed: " + ex.getMessage());
         }
     }
@@ -391,12 +374,7 @@ public class PrimaryController
     {
         try
         {
-            var destination = message.getJMSDestination();
-            if (destination instanceof Queue queue)
-            {
-                return queue.getQueueName();
-            }
-            if (destination instanceof Topic topic)
+            if (message.getJMSDestination() instanceof Topic topic)
             {
                 return topic.getTopicName();
             }
@@ -432,11 +410,9 @@ public class PrimaryController
                 parseIntOrDefault(brokerPortField.getText(), JmsSpyPreferences.DEFAULT_BROKER_PORT),
                 usernameField.getText(),
                 destinationCombo.getEditor().getText(),
-                queueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC,
                 appendRadio.isSelected(),
                 darkModeCheckBox.isSelected(),
                 publishDestinationCombo.getEditor().getText(),
-                publishQueueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC,
                 jolokiaPort,
                 jolokiaPath,
                 addressSearchMbean,
