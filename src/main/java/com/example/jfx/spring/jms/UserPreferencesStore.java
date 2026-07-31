@@ -55,7 +55,8 @@ class UserPreferencesStore
                 parseIntOrDefault(properties.getProperty("jolokiaPort"), JolokiaClient.DEFAULT_JOLOKIA_PORT),
                 properties.getProperty("jolokiaPath", JolokiaClient.DEFAULT_JOLOKIA_PATH),
                 properties.getProperty("addressSearchMbean", JolokiaClient.DEFAULT_ADDRESS_SEARCH_MBEAN),
-                Boolean.parseBoolean(properties.getProperty("virtualService", "false")));
+                Boolean.parseBoolean(properties.getProperty("virtualService", "false")),
+                Boolean.parseBoolean(properties.getProperty("formatJson", "false")));
     }
 
     /**
@@ -111,6 +112,7 @@ class UserPreferencesStore
         properties.setProperty("jolokiaPath", preferences.jolokiaPath());
         properties.setProperty("addressSearchMbean", preferences.addressSearchMbean());
         properties.setProperty("virtualService", Boolean.toString(preferences.virtualService()));
+        properties.setProperty("formatJson", Boolean.toString(preferences.formatJson()));
 
         try
         {

@@ -95,6 +95,7 @@
                         </toggleGroup>
                     </RadioButton>
                     <RadioButton fx:id="replaceRadio" text="Replace" toggleGroup="$displayModeGroup"/>
+                    <CheckBox fx:id="formatJsonCheckBox" text="Format JSON"/>
                 </HBox>
 
                 <TextArea fx:id="messageArea" editable="false" wrapText="true" VBox.vgrow="ALWAYS"/>

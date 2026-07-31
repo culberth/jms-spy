@@ -1,5 +1,9 @@
 package com.example.jfx.spring.jms;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import jakarta.jms.JMSException;
 import jakarta.jms.Message;
 import jakarta.jms.TextMessage;
@@ -36,6 +40,7 @@ public class PrimaryController
 
     private static final String STATUS_SUCCESS_STYLE_CLASS = "status-success";
     private static final String STATUS_WARNING_STYLE_CLASS = "status-warning";
+    private static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private final JmsConnectionService jmsConnectionService;
     private final UserPreferencesStore preferencesStore;
@@ -68,6 +73,8 @@ public class PrimaryController
     private RadioButton appendRadio;
     @FXML
     private RadioButton replaceRadio;
+    @FXML
+    private CheckBox formatJsonCheckBox;
     @FXML
     private TextArea messageArea;
     @FXML
@@ -102,11 +109,13 @@ public class PrimaryController
         destinationCombo.setValue(preferences.subscribeDestination());
         appendRadio.setSelected(preferences.appendMode());
         replaceRadio.setSelected(!preferences.appendMode());
+        formatJsonCheckBox.setSelected(preferences.formatJson());
         darkModeCheckBox.setSelected(preferences.darkMode());
         applyTheme(preferences.darkMode());
         publishDestinationCombo.setValue(preferences.publishDestination());
 
         appendRadio.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
+        formatJsonCheckBox.selectedProperty().addListener((observable, wasSelected, isSelected) -> savePreferences());
         darkModeCheckBox.selectedProperty().addListener((observable, wasDark, isDark) ->
         {
             applyTheme(isDark);
@@ -356,9 +365,11 @@ public class PrimaryController
 
     private void onMessageReceived(Message message)
     {
-        var line = "[" + extractDestinationName(message) + "] " + extractContent(message);
+        // extractContent reads formatJsonCheckBox, a JavaFX control, so the whole line has to be
+        // built on the FX thread - onMessageReceived itself runs on a JMS provider thread.
         Platform.runLater(() ->
         {
+            var line = "[" + extractDestinationName(message) + "] " + extractContent(message);
             if (appendRadio.isSelected())
             {
                 messageArea.appendText(line + System.lineSeparator());
@@ -392,7 +403,8 @@ public class PrimaryController
         {
             if (message instanceof TextMessage textMessage)
             {
-                return textMessage.getText();
+                var text = textMessage.getText();
+                return formatJsonCheckBox.isSelected() ? formatIfJson(text) : text;
             }
             return message.toString();
         }
@@ -400,6 +412,26 @@ public class PrimaryController
         {
             log.error("Failed to read message content", ex);
             return "<unreadable message: " + ex.getMessage() + ">";
+        }
+    }
+
+    /**
+     * Pretty-prints the message body when it's valid JSON; non-JSON text (the common case for
+     * arbitrary test messages) is returned unchanged rather than surfacing a parse error.
+     */
+    private static String formatIfJson(String text)
+    {
+        if (!StringUtils.hasText(text))
+        {
+            return text;
+        }
+        try
+        {
+            return PRETTY_GSON.toJson(JsonParser.parseString(text));
+        }
+        catch (JsonSyntaxException ex)
+        {
+            return text;
         }
     }
 
@@ -416,6 +448,7 @@ public class PrimaryController
                 jolokiaPort,
                 jolokiaPath,
                 addressSearchMbean,
-                virtualServiceCheckBox.isSelected()));
+                virtualServiceCheckBox.isSelected(),
+                formatJsonCheckBox.isSelected()));
     }
 }

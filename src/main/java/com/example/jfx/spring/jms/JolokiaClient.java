@@ -1,7 +1,6 @@
 package com.example.jfx.spring.jms;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonParser;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -40,7 +39,6 @@ class JolokiaClient
     private static final Pattern ADDRESS_ATTRIBUTE = Pattern.compile("address=\"([^\"]+)\"");
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Jolokia is Artemis's HTTP management API, normally exposed on a different port/path than
@@ -75,12 +73,16 @@ class JolokiaClient
         }
 
         var addresses = new TreeSet<String>();
-        for (JsonNode mbeanName : objectMapper.readTree(response.body()).path("value"))
+        var value = JsonParser.parseString(response.body()).getAsJsonObject().get("value");
+        if (value != null && value.isJsonArray())
         {
-            var matcher = ADDRESS_ATTRIBUTE.matcher(mbeanName.asText());
-            if (matcher.find())
+            for (var mbeanName : value.getAsJsonArray())
             {
-                addresses.add(matcher.group(1));
+                var matcher = ADDRESS_ATTRIBUTE.matcher(mbeanName.getAsString());
+                if (matcher.find())
+                {
+                    addresses.add(matcher.group(1));
+                }
             }
         }
         return new ArrayList<>(addresses);
