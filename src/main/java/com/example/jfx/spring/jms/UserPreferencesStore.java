@@ -45,7 +45,8 @@ class UserPreferencesStore
         }
 
         return new JmsSpyPreferences(
-                properties.getProperty("brokerUrl", JmsSpyPreferences.defaultBrokerUrl()),
+                resolveBrokerHost(properties),
+                resolveBrokerPort(properties),
                 properties.getProperty("username", JmsSpyPreferences.defaultUsername()),
                 properties.getProperty("subscribeDestination", ""),
                 parseDestinationType(properties.getProperty("subscribeDestinationType")),
@@ -53,13 +54,40 @@ class UserPreferencesStore
                 Boolean.parseBoolean(properties.getProperty("darkMode", "false")),
                 properties.getProperty("publishDestination", ""),
                 parseDestinationType(properties.getProperty("publishDestinationType")),
-                parseJolokiaPort(properties.getProperty("jolokiaPort")),
+                parseIntOrDefault(properties.getProperty("jolokiaPort"), JolokiaClient.DEFAULT_JOLOKIA_PORT),
                 properties.getProperty("jolokiaPath", JolokiaClient.DEFAULT_JOLOKIA_PATH),
                 properties.getProperty("addressSearchMbean", JolokiaClient.DEFAULT_ADDRESS_SEARCH_MBEAN),
                 Boolean.parseBoolean(properties.getProperty("jolokiaVirtualService", "false")));
     }
 
-    private int parseJolokiaPort(String value)
+    /**
+     * Config files written before Broker URL was split into host/port fields only have a single
+     * "brokerUrl" key (e.g. "tcp://host:port") - fall back to parsing that if the newer
+     * "brokerHost"/"brokerPort" keys aren't present yet, so upgrading doesn't lose a saved broker.
+     */
+    private String resolveBrokerHost(Properties properties)
+    {
+        if (properties.containsKey("brokerHost"))
+        {
+            return properties.getProperty("brokerHost");
+        }
+        return properties.containsKey("brokerUrl")
+                ? JmsSpyPreferences.parseBrokerHost(properties.getProperty("brokerUrl"))
+                : JmsSpyPreferences.defaultBrokerHost();
+    }
+
+    private int resolveBrokerPort(Properties properties)
+    {
+        if (properties.containsKey("brokerPort"))
+        {
+            return parseIntOrDefault(properties.getProperty("brokerPort"), JmsSpyPreferences.DEFAULT_BROKER_PORT);
+        }
+        return properties.containsKey("brokerUrl")
+                ? JmsSpyPreferences.parseBrokerPort(properties.getProperty("brokerUrl"))
+                : JmsSpyPreferences.defaultBrokerPort();
+    }
+
+    private int parseIntOrDefault(String value, int defaultValue)
     {
         try
         {
@@ -67,7 +95,7 @@ class UserPreferencesStore
         }
         catch (NumberFormatException | NullPointerException ex)
         {
-            return JolokiaClient.DEFAULT_JOLOKIA_PORT;
+            return defaultValue;
         }
     }
 
@@ -86,7 +114,8 @@ class UserPreferencesStore
     void save(JmsSpyPreferences preferences)
     {
         var properties = new Properties();
-        properties.setProperty("brokerUrl", preferences.brokerUrl());
+        properties.setProperty("brokerHost", preferences.brokerHost());
+        properties.setProperty("brokerPort", Integer.toString(preferences.brokerPort()));
         properties.setProperty("username", preferences.username());
         properties.setProperty("subscribeDestination", preferences.subscribeDestination());
         properties.setProperty("subscribeDestinationType", preferences.subscribeDestinationType().name());

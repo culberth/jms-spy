@@ -45,7 +45,9 @@ public class PrimaryController
     @FXML
     private CheckBox darkModeCheckBox;
     @FXML
-    private TextField brokerUrlField;
+    private TextField brokerHostField;
+    @FXML
+    private TextField brokerPortField;
     @FXML
     private TextField usernameField;
     @FXML
@@ -94,7 +96,8 @@ public class PrimaryController
         jolokiaPath = preferences.jolokiaPath();
         addressSearchMbean = preferences.addressSearchMbean();
         jolokiaVirtualService = preferences.jolokiaVirtualService();
-        brokerUrlField.setText(preferences.brokerUrl());
+        brokerHostField.setText(preferences.brokerHost());
+        brokerPortField.setText(String.valueOf(preferences.brokerPort()));
         usernameField.setText(preferences.username());
         if (!preferencesStore.hasSavedConfig())
         {
@@ -175,14 +178,7 @@ public class PrimaryController
             return;
         }
 
-        try
-        {
-            jolokiaPort = Integer.parseInt(portField.getText().trim());
-        }
-        catch (NumberFormatException ex)
-        {
-            jolokiaPort = JolokiaClient.DEFAULT_JOLOKIA_PORT;
-        }
+        jolokiaPort = parseIntOrDefault(portField.getText(), JolokiaClient.DEFAULT_JOLOKIA_PORT);
         jolokiaPath = pathField.getText();
         addressSearchMbean = mbeanField.getText();
         jolokiaVirtualService = virtualServiceCheckBox.isSelected();
@@ -217,7 +213,7 @@ public class PrimaryController
             return;
         }
 
-        var brokerUrl = brokerUrlField.getText();
+        var brokerUrl = "tcp://" + brokerHostField.getText() + ":" + brokerPortField.getText();
         try
         {
             jmsConnectionService.connect(brokerUrl, usernameField.getText(), passwordField.getText());
@@ -226,7 +222,7 @@ public class PrimaryController
             listenButton.setDisable(false);
             publishButton.setDisable(false);
             savePreferences();
-            refreshDestinationList(brokerUrl, usernameField.getText(), passwordField.getText());
+            refreshDestinationList(brokerHostField.getText(), usernameField.getText(), passwordField.getText());
         }
         catch (JMSException | RuntimeException ex)
         {
@@ -240,9 +236,9 @@ public class PrimaryController
      * suggestions on both destination combo boxes. Runs off the JavaFX thread since it's a
      * network call; a failure here is non-fatal, the destination fields stay freely editable.
      */
-    private void refreshDestinationList(String brokerUrl, String username, String password)
+    private void refreshDestinationList(String brokerHost, String username, String password)
     {
-        var jolokiaUrl = jolokiaClient.deriveJolokiaUrl(brokerUrl, jolokiaPort, jolokiaPath, jolokiaVirtualService);
+        var jolokiaUrl = jolokiaClient.deriveJolokiaUrl(brokerHost, jolokiaPort, jolokiaPath, jolokiaVirtualService);
         CompletableFuture.supplyAsync(() ->
         {
             try
@@ -295,6 +291,18 @@ public class PrimaryController
     private List<String> parseDestinationList(String text)
     {
         return Arrays.stream(text.split(",")).map(String::trim).filter(StringUtils::hasText).toList();
+    }
+
+    private static int parseIntOrDefault(String text, int defaultValue)
+    {
+        try
+        {
+            return Integer.parseInt(text.trim());
+        }
+        catch (NumberFormatException ex)
+        {
+            return defaultValue;
+        }
     }
 
     @FXML
@@ -378,7 +386,8 @@ public class PrimaryController
     private void savePreferences()
     {
         preferencesStore.save(new JmsSpyPreferences(
-                brokerUrlField.getText(),
+                brokerHostField.getText(),
+                parseIntOrDefault(brokerPortField.getText(), JmsSpyPreferences.DEFAULT_BROKER_PORT),
                 usernameField.getText(),
                 destinationCombo.getEditor().getText(),
                 queueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC,

@@ -52,12 +52,13 @@
             <ColumnConstraints hgrow="ALWAYS" minWidth="150.0"/>
         </columnConstraints>
 
-        <Label text="Broker URL" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-        <TextField fx:id="brokerUrlField" promptText="tcp://localhost:61616" GridPane.rowIndex="0"
-                   GridPane.columnIndex="1"/>
+        <Label text="Broker Host" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <TextField fx:id="brokerHostField" promptText="localhost" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
         <Label text="Username" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
         <TextField fx:id="usernameField" GridPane.rowIndex="0" GridPane.columnIndex="3"/>
 
+        <Label text="Broker Port" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <TextField fx:id="brokerPortField" promptText="61616" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
         <Label text="Password" GridPane.rowIndex="1" GridPane.columnIndex="2"/>
         <PasswordField fx:id="passwordField" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
     </GridPane>

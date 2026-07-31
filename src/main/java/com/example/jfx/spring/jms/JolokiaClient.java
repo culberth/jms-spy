@@ -40,28 +40,16 @@ class JolokiaClient
 
     /**
      * Jolokia is Artemis's HTTP management API, normally exposed on a different port/path than
-     * the JMS broker URL - there's no way to derive it precisely, so this combines the given
-     * (user-configurable, defaulting to {@link #DEFAULT_JOLOKIA_PORT}/{@link #DEFAULT_JOLOKIA_PATH})
-     * port and path with only the hostname reused from the broker URL. When Artemis sits behind a
-     * virtual service (e.g. a Kubernetes Service/ingress fronting it under a single DNS name),
-     * there's no separate management port to reach directly - the port is omitted entirely and
-     * the host's default HTTP port is used instead.
+     * the JMS broker's own port - there's no way to derive it precisely, so this combines the
+     * given (user-configurable, defaulting to {@link #DEFAULT_JOLOKIA_PORT}/{@link #DEFAULT_JOLOKIA_PATH})
+     * port and path with just the broker's hostname. When Artemis sits behind a virtual service
+     * (e.g. a Kubernetes Service/ingress fronting it under a single DNS name), there's no separate
+     * management port to reach directly - the port is omitted entirely and the host's default HTTP
+     * port is used instead.
      */
-    String deriveJolokiaUrl(String brokerUrl, int port, String path, boolean virtualService)
+    String deriveJolokiaUrl(String brokerHost, int port, String path, boolean virtualService)
     {
-        var host = "localhost";
-        try
-        {
-            var parsedHost = URI.create(brokerUrl).getHost();
-            if (parsedHost != null)
-            {
-                host = parsedHost;
-            }
-        }
-        catch (IllegalArgumentException ex)
-        {
-            // brokerUrl wasn't a parseable URI - fall back to localhost
-        }
+        var host = StringUtils.hasText(brokerHost) ? brokerHost : "localhost";
         return virtualService ? "http://" + host + path : "http://" + host + ":" + port + path;
     }
 
