@@ -52,7 +52,23 @@ class UserPreferencesStore
                 Boolean.parseBoolean(properties.getProperty("appendMode", "true")),
                 Boolean.parseBoolean(properties.getProperty("darkMode", "false")),
                 properties.getProperty("publishDestination", ""),
-                parseDestinationType(properties.getProperty("publishDestinationType")));
+                parseDestinationType(properties.getProperty("publishDestinationType")),
+                parseJolokiaPort(properties.getProperty("jolokiaPort")),
+                properties.getProperty("jolokiaPath", JolokiaClient.DEFAULT_JOLOKIA_PATH),
+                properties.getProperty("addressSearchMbean", JolokiaClient.DEFAULT_ADDRESS_SEARCH_MBEAN),
+                Boolean.parseBoolean(properties.getProperty("jolokiaVirtualService", "false")));
+    }
+
+    private int parseJolokiaPort(String value)
+    {
+        try
+        {
+            return Integer.parseInt(value);
+        }
+        catch (NumberFormatException | NullPointerException ex)
+        {
+            return JolokiaClient.DEFAULT_JOLOKIA_PORT;
+        }
     }
 
     private DestinationType parseDestinationType(String value)
@@ -78,6 +94,10 @@ class UserPreferencesStore
         properties.setProperty("darkMode", Boolean.toString(preferences.darkMode()));
         properties.setProperty("publishDestination", preferences.publishDestination());
         properties.setProperty("publishDestinationType", preferences.publishDestinationType().name());
+        properties.setProperty("jolokiaPort", Integer.toString(preferences.jolokiaPort()));
+        properties.setProperty("jolokiaPath", preferences.jolokiaPath());
+        properties.setProperty("addressSearchMbean", preferences.addressSearchMbean());
+        properties.setProperty("jolokiaVirtualService", Boolean.toString(preferences.jolokiaVirtualService()));
 
         try
         {

@@ -32,7 +32,9 @@
             <SeparatorMenuItem/>
             <MenuItem text="Close" onAction="#closeApplication"/>
         </Menu>
-        <Menu text="Edit"/>
+        <Menu text="Edit">
+            <MenuItem text="Settings" onAction="#showSettingsDialog"/>
+        </Menu>
         <Menu text="Help">
             <MenuItem text="About" onAction="#showAboutDialog"/>
         </Menu>

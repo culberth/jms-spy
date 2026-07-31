@@ -9,13 +9,16 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -78,10 +81,19 @@ public class PrimaryController
     @FXML
     private Label publishStatusLabel;
 
+    private int jolokiaPort;
+    private String jolokiaPath;
+    private String addressSearchMbean;
+    private boolean jolokiaVirtualService;
+
     @FXML
     private void initialize()
     {
         var preferences = preferencesStore.load();
+        jolokiaPort = preferences.jolokiaPort();
+        jolokiaPath = preferences.jolokiaPath();
+        addressSearchMbean = preferences.addressSearchMbean();
+        jolokiaVirtualService = preferences.jolokiaVirtualService();
         brokerUrlField.setText(preferences.brokerUrl());
         usernameField.setText(preferences.username());
         if (!preferencesStore.hasSavedConfig())
@@ -125,6 +137,56 @@ public class PrimaryController
     private void closeApplication()
     {
         Platform.exit();
+    }
+
+    @FXML
+    private void showSettingsDialog()
+    {
+        var dialog = new Dialog<ButtonType>();
+        dialog.initOwner(rootPane.getScene().getWindow());
+        dialog.setTitle("Settings");
+        dialog.setHeaderText("Jolokia Settings");
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        var portField = new TextField(String.valueOf(jolokiaPort));
+        var pathField = new TextField(jolokiaPath);
+        var mbeanField = new TextField(addressSearchMbean);
+        mbeanField.setPrefWidth(350.0);
+
+        var virtualServiceCheckBox = new CheckBox("Virtual service (DNS host name only, no port)");
+        virtualServiceCheckBox.setSelected(jolokiaVirtualService);
+        portField.setDisable(jolokiaVirtualService);
+        virtualServiceCheckBox.selectedProperty()
+                .addListener((observable, wasSelected, isSelected) -> portField.setDisable(isSelected));
+
+        var grid = new GridPane();
+        grid.setHgap(10.0);
+        grid.setVgap(10.0);
+        grid.addRow(0, new Label("Jolokia Port"), portField);
+        grid.addRow(1, new Label("Jolokia Path"), pathField);
+        grid.addRow(2, new Label("Address Search MBean"), mbeanField);
+        grid.addRow(3, virtualServiceCheckBox);
+        GridPane.setColumnSpan(virtualServiceCheckBox, 2);
+        dialog.getDialogPane().setContent(grid);
+
+        var result = dialog.showAndWait();
+        if (result.isEmpty() || result.get() != ButtonType.OK)
+        {
+            return;
+        }
+
+        try
+        {
+            jolokiaPort = Integer.parseInt(portField.getText().trim());
+        }
+        catch (NumberFormatException ex)
+        {
+            jolokiaPort = JolokiaClient.DEFAULT_JOLOKIA_PORT;
+        }
+        jolokiaPath = pathField.getText();
+        addressSearchMbean = mbeanField.getText();
+        jolokiaVirtualService = virtualServiceCheckBox.isSelected();
+        savePreferences();
     }
 
     @FXML
@@ -180,12 +242,12 @@ public class PrimaryController
      */
     private void refreshDestinationList(String brokerUrl, String username, String password)
     {
-        var jolokiaUrl = jolokiaClient.deriveJolokiaUrl(brokerUrl);
+        var jolokiaUrl = jolokiaClient.deriveJolokiaUrl(brokerUrl, jolokiaPort, jolokiaPath, jolokiaVirtualService);
         CompletableFuture.supplyAsync(() ->
         {
             try
             {
-                return jolokiaClient.searchAddresses(jolokiaUrl, username, password);
+                return jolokiaClient.searchAddresses(jolokiaUrl, username, password, addressSearchMbean);
             }
             catch (Exception ex)
             {
@@ -323,6 +385,10 @@ public class PrimaryController
                 appendRadio.isSelected(),
                 darkModeCheckBox.isSelected(),
                 publishDestinationCombo.getEditor().getText(),
-                publishQueueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC));
+                publishQueueRadio.isSelected() ? DestinationType.QUEUE : DestinationType.TOPIC,
+                jolokiaPort,
+                jolokiaPath,
+                addressSearchMbean,
+                jolokiaVirtualService));
     }
 }

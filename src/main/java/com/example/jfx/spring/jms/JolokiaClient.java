@@ -25,12 +25,14 @@ import java.util.regex.Pattern;
 class JolokiaClient
 {
 
-    private static final int DEFAULT_JOLOKIA_PORT = 8161;
-    private static final String DEFAULT_JOLOKIA_PATH = "/console/jolokia";
-
+    // Defaults for the user-editable Jolokia settings (Edit -> Settings) - also used by
+    // JmsSpyPreferences.defaults() when no config file has been saved yet.
+    static final int DEFAULT_JOLOKIA_PORT = 8161;
+    static final String DEFAULT_JOLOKIA_PATH = "/console/jolokia";
     // Matches every address MBean regardless of broker name or routing type (anycast/multicast),
     // so both queue and topic addresses are returned.
-    private static final String ADDRESS_SEARCH_MBEAN = "org.apache.activemq.artemis:broker=*,component=addresses,address=*";
+    static final String DEFAULT_ADDRESS_SEARCH_MBEAN = "org.apache.activemq.artemis:broker=*,component=addresses,address=*";
+
     private static final Pattern ADDRESS_ATTRIBUTE = Pattern.compile("address=\"([^\"]+)\"");
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -38,10 +40,14 @@ class JolokiaClient
 
     /**
      * Jolokia is Artemis's HTTP management API, normally exposed on a different port/path than
-     * the JMS broker URL - there's no way to derive it precisely, so this assumes the broker's
-     * default console port and Jolokia path, reusing only the hostname from the broker URL.
+     * the JMS broker URL - there's no way to derive it precisely, so this combines the given
+     * (user-configurable, defaulting to {@link #DEFAULT_JOLOKIA_PORT}/{@link #DEFAULT_JOLOKIA_PATH})
+     * port and path with only the hostname reused from the broker URL. When Artemis sits behind a
+     * virtual service (e.g. a Kubernetes Service/ingress fronting it under a single DNS name),
+     * there's no separate management port to reach directly - the port is omitted entirely and
+     * the host's default HTTP port is used instead.
      */
-    String deriveJolokiaUrl(String brokerUrl)
+    String deriveJolokiaUrl(String brokerUrl, int port, String path, boolean virtualService)
     {
         var host = "localhost";
         try
@@ -56,13 +62,13 @@ class JolokiaClient
         {
             // brokerUrl wasn't a parseable URI - fall back to localhost
         }
-        return "http://" + host + ":" + DEFAULT_JOLOKIA_PORT + DEFAULT_JOLOKIA_PATH;
+        return virtualService ? "http://" + host + path : "http://" + host + ":" + port + path;
     }
 
-    List<String> searchAddresses(String jolokiaUrl, String username, String password)
+    List<String> searchAddresses(String jolokiaUrl, String username, String password, String addressSearchMbean)
             throws IOException, InterruptedException
     {
-        var searchUrl = jolokiaUrl.replaceAll("/+$", "") + "/search/" + ADDRESS_SEARCH_MBEAN;
+        var searchUrl = jolokiaUrl.replaceAll("/+$", "") + "/search/" + addressSearchMbean;
         var requestBuilder = HttpRequest.newBuilder(URI.create(searchUrl)).GET();
         if (StringUtils.hasText(username))
         {
