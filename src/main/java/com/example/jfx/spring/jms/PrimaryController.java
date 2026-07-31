@@ -212,6 +212,7 @@ public class PrimaryController
             publishButton.setDisable(true);
             destinationCombo.getItems().clear();
             publishDestinationCombo.getItems().clear();
+            setConnectionFieldsDisabled(false);
             return;
         }
 
@@ -230,6 +231,7 @@ public class PrimaryController
             setConnectionStatus("Connected to " + brokerUrl, STATUS_SUCCESS_STYLE_CLASS);
             listenButton.setDisable(false);
             publishButton.setDisable(false);
+            setConnectionFieldsDisabled(true);
             savePreferences();
             refreshDestinationList(brokerHostField.getText(), usernameField.getText(), passwordField.getText());
         }
@@ -238,6 +240,21 @@ public class PrimaryController
             log.error("Failed to connect to broker {}", brokerUrl, ex);
             setConnectionStatus("Connection failed: " + ex.getMessage(), STATUS_WARNING_STYLE_CLASS);
         }
+    }
+
+    /**
+     * The broker connection details can't be changed without disconnecting first, so they're
+     * locked while connected. brokerPortField is a special case: re-enabling it on disconnect
+     * would ignore Virtual Service's own claim on that field, so it's only re-enabled here when
+     * Virtual Service is unchecked.
+     */
+    private void setConnectionFieldsDisabled(boolean disabled)
+    {
+        brokerHostField.setDisable(disabled);
+        brokerPortField.setDisable(disabled || virtualServiceCheckBox.isSelected());
+        virtualServiceCheckBox.setDisable(disabled);
+        usernameField.setDisable(disabled);
+        passwordField.setDisable(disabled);
     }
 
     /**
