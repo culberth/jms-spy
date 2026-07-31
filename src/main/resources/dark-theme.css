@@ -9,3 +9,11 @@
 .label {
     -fx-text-fill: #e0e0e0;
 }
+
+.status-success {
+    -fx-text-fill: #66bb6a;
+}
+
+.status-warning {
+    -fx-text-fill: #fdd835;
+}

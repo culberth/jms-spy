@@ -35,6 +35,9 @@ import java.util.concurrent.CompletableFuture;
 public class PrimaryController
 {
 
+    private static final String STATUS_SUCCESS_STYLE_CLASS = "status-success";
+    private static final String STATUS_WARNING_STYLE_CLASS = "status-warning";
+
     private final JmsConnectionService jmsConnectionService;
     private final UserPreferencesStore preferencesStore;
     private final AppProperties appProperties;
@@ -203,7 +206,7 @@ public class PrimaryController
         {
             jmsConnectionService.disconnect();
             connectButton.setText("Connect");
-            connectionStatusLabel.setText("Disconnected");
+            setConnectionStatus("Disconnected", null);
             listenButton.setText("Listen");
             listenButton.setDisable(true);
             publishButton.setDisable(true);
@@ -224,7 +227,7 @@ public class PrimaryController
         {
             jmsConnectionService.connect(brokerUrl, usernameField.getText(), passwordField.getText());
             connectButton.setText("Disconnect");
-            connectionStatusLabel.setText("Connected to " + brokerUrl);
+            setConnectionStatus("Connected to " + brokerUrl, STATUS_SUCCESS_STYLE_CLASS);
             listenButton.setDisable(false);
             publishButton.setDisable(false);
             savePreferences();
@@ -233,7 +236,22 @@ public class PrimaryController
         catch (JMSException | RuntimeException ex)
         {
             log.error("Failed to connect to broker {}", brokerUrl, ex);
-            connectionStatusLabel.setText("Connection failed: " + ex.getMessage());
+            setConnectionStatus("Connection failed: " + ex.getMessage(), STATUS_WARNING_STYLE_CLASS);
+        }
+    }
+
+    /**
+     * Sets the connection status text and, via a style class rather than a hardcoded color,
+     * whether it reads as success (green), a problem (yellow), or neither - in which case it
+     * falls back to the current theme's own default label color (light/dark mode).
+     */
+    private void setConnectionStatus(String text, String statusStyleClass)
+    {
+        connectionStatusLabel.setText(text);
+        connectionStatusLabel.getStyleClass().removeAll(STATUS_SUCCESS_STYLE_CLASS, STATUS_WARNING_STYLE_CLASS);
+        if (statusStyleClass != null)
+        {
+            connectionStatusLabel.getStyleClass().add(statusStyleClass);
         }
     }
 
@@ -277,7 +295,7 @@ public class PrimaryController
         var destinations = parseDestinationList(destinationCombo.getEditor().getText());
         if (destinations.isEmpty())
         {
-            connectionStatusLabel.setText("Enter at least one destination name before listening");
+            setConnectionStatus("Enter at least one destination name before listening", null);
             return;
         }
 
@@ -291,7 +309,7 @@ public class PrimaryController
         catch (JMSException | RuntimeException ex)
         {
             log.error("Failed to listen to {} {}", destinationType, destinations, ex);
-            connectionStatusLabel.setText("Listen failed: " + ex.getMessage());
+            setConnectionStatus("Listen failed: " + ex.getMessage(), null);
         }
     }
 
