@@ -49,6 +49,8 @@ public class PrimaryController
     @FXML
     private TextField brokerPortField;
     @FXML
+    private CheckBox virtualServiceCheckBox;
+    @FXML
     private TextField usernameField;
     @FXML
     private PasswordField passwordField;
@@ -86,7 +88,6 @@ public class PrimaryController
     private int jolokiaPort;
     private String jolokiaPath;
     private String addressSearchMbean;
-    private boolean jolokiaVirtualService;
 
     @FXML
     private void initialize()
@@ -95,9 +96,10 @@ public class PrimaryController
         jolokiaPort = preferences.jolokiaPort();
         jolokiaPath = preferences.jolokiaPath();
         addressSearchMbean = preferences.addressSearchMbean();
-        jolokiaVirtualService = preferences.jolokiaVirtualService();
         brokerHostField.setText(preferences.brokerHost());
         brokerPortField.setText(String.valueOf(preferences.brokerPort()));
+        virtualServiceCheckBox.setSelected(preferences.virtualService());
+        brokerPortField.setDisable(preferences.virtualService());
         usernameField.setText(preferences.username());
         if (!preferencesStore.hasSavedConfig())
         {
@@ -120,6 +122,11 @@ public class PrimaryController
         darkModeCheckBox.selectedProperty().addListener((observable, wasDark, isDark) ->
         {
             applyTheme(isDark);
+            savePreferences();
+        });
+        virtualServiceCheckBox.selectedProperty().addListener((observable, wasSelected, isSelected) ->
+        {
+            brokerPortField.setDisable(isSelected);
             savePreferences();
         });
     }
@@ -152,15 +159,10 @@ public class PrimaryController
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         var portField = new TextField(String.valueOf(jolokiaPort));
+        portField.setDisable(virtualServiceCheckBox.isSelected());
         var pathField = new TextField(jolokiaPath);
         var mbeanField = new TextField(addressSearchMbean);
         mbeanField.setPrefWidth(350.0);
-
-        var virtualServiceCheckBox = new CheckBox("Virtual service (DNS host name only, no port)");
-        virtualServiceCheckBox.setSelected(jolokiaVirtualService);
-        portField.setDisable(jolokiaVirtualService);
-        virtualServiceCheckBox.selectedProperty()
-                .addListener((observable, wasSelected, isSelected) -> portField.setDisable(isSelected));
 
         var grid = new GridPane();
         grid.setHgap(10.0);
@@ -168,8 +170,6 @@ public class PrimaryController
         grid.addRow(0, new Label("Jolokia Port"), portField);
         grid.addRow(1, new Label("Jolokia Path"), pathField);
         grid.addRow(2, new Label("Address Search MBean"), mbeanField);
-        grid.addRow(3, virtualServiceCheckBox);
-        GridPane.setColumnSpan(virtualServiceCheckBox, 2);
         dialog.getDialogPane().setContent(grid);
 
         var result = dialog.showAndWait();
@@ -181,7 +181,6 @@ public class PrimaryController
         jolokiaPort = parseIntOrDefault(portField.getText(), JolokiaClient.DEFAULT_JOLOKIA_PORT);
         jolokiaPath = pathField.getText();
         addressSearchMbean = mbeanField.getText();
-        jolokiaVirtualService = virtualServiceCheckBox.isSelected();
         savePreferences();
     }
 
@@ -213,7 +212,14 @@ public class PrimaryController
             return;
         }
 
-        var brokerUrl = "tcp://" + brokerHostField.getText() + ":" + brokerPortField.getText();
+        // Unlike HTTP, plain TCP has no universal default-port convention that Artemis's own URI
+        // parser applies for us (a bare "tcp://host" parses to an explicit port=-1, not 61616), so
+        // a virtual service still gets a real port here - just the well-known Artemis default,
+        // rather than one the user has to know/type themselves.
+        var brokerPort = virtualServiceCheckBox.isSelected()
+                ? String.valueOf(JmsSpyPreferences.DEFAULT_BROKER_PORT)
+                : brokerPortField.getText();
+        var brokerUrl = "tcp://" + brokerHostField.getText() + ":" + brokerPort;
         try
         {
             jmsConnectionService.connect(brokerUrl, usernameField.getText(), passwordField.getText());
@@ -238,7 +244,8 @@ public class PrimaryController
      */
     private void refreshDestinationList(String brokerHost, String username, String password)
     {
-        var jolokiaUrl = jolokiaClient.deriveJolokiaUrl(brokerHost, jolokiaPort, jolokiaPath, jolokiaVirtualService);
+        var jolokiaUrl = jolokiaClient.deriveJolokiaUrl(brokerHost, jolokiaPort, jolokiaPath,
+                virtualServiceCheckBox.isSelected());
         CompletableFuture.supplyAsync(() ->
         {
             try
@@ -398,6 +405,6 @@ public class PrimaryController
                 jolokiaPort,
                 jolokiaPath,
                 addressSearchMbean,
-                jolokiaVirtualService));
+                virtualServiceCheckBox.isSelected()));
     }
 }

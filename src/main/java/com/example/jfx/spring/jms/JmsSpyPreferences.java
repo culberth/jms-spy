@@ -5,7 +5,7 @@ import java.net.URI;
 public record JmsSpyPreferences(String brokerHost, int brokerPort, String username, String subscribeDestination,
         DestinationType subscribeDestinationType, boolean appendMode, boolean darkMode, String publishDestination,
         DestinationType publishDestinationType, int jolokiaPort, String jolokiaPath, String addressSearchMbean,
-        boolean jolokiaVirtualService)
+        boolean virtualService)
 {
 
     static final int DEFAULT_BROKER_PORT = 61616;

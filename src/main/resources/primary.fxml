@@ -63,6 +63,10 @@
         <PasswordField fx:id="passwordField" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
     </GridPane>
 
+    <HBox alignment="CENTER_LEFT">
+        <CheckBox fx:id="virtualServiceCheckBox" text="Virtual Service (DNS host name only, no port)"/>
+    </HBox>
+
     <HBox alignment="CENTER_LEFT" spacing="10.0">
         <Button fx:id="connectButton" text="Connect" onAction="#toggleConnection" prefWidth="110.0"/>
         <Label fx:id="connectionStatusLabel" text="Disconnected"/>
