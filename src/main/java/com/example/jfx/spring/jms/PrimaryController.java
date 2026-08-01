@@ -295,7 +295,7 @@ public class PrimaryController
         {
             try
             {
-                return jolokiaClient.searchAddresses(jolokiaUrl, username, password, addressSearchMbean);
+                return jolokiaClient.listTopicAddresses(jolokiaUrl, username, password, addressSearchMbean);
             }
             catch (Exception ex)
             {

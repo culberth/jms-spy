@@ -54,10 +54,30 @@ class UserPreferencesStore
                 properties.getProperty("publishDestination", ""),
                 parseIntOrDefault(properties.getProperty("jolokiaPort"), JolokiaClient.DEFAULT_JOLOKIA_PORT),
                 properties.getProperty("jolokiaPath", JolokiaClient.DEFAULT_JOLOKIA_PATH),
-                properties.getProperty("addressSearchMbean", JolokiaClient.DEFAULT_ADDRESS_SEARCH_MBEAN),
+                resolveAddressSearchMbean(properties),
                 Boolean.parseBoolean(properties.getProperty("virtualService", "false")),
                 Boolean.parseBoolean(properties.getProperty("formatJson", "false")),
                 Boolean.parseBoolean(properties.getProperty("anonymousLogin", "false")));
+    }
+
+    /**
+     * Earlier versions enumerated topics by searching the per-address "subcomponent=queues" MBeans
+     * filtered on routing-type, which only ever matched topics that already had a live subscriber
+     * (and, with an uppercase routing-type literal, matched nothing at all). Because this pattern
+     * is saved on every successful connect, an existing config file would keep pinning the broken
+     * lookup forever - a saved value always wins over the code default - so a stored pattern still
+     * carrying the old queue-subcomponent shape is discarded in favour of the current default
+     * rather than migrated field-by-field. A pattern the user has genuinely customised away from
+     * that shape is left alone.
+     */
+    private String resolveAddressSearchMbean(Properties properties)
+    {
+        var saved = properties.getProperty("addressSearchMbean");
+        if (saved == null || saved.contains("subcomponent=queues"))
+        {
+            return JolokiaClient.DEFAULT_ADDRESS_SEARCH_MBEAN;
+        }
+        return saved;
     }
 
     /**
