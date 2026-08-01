@@ -4,7 +4,7 @@ import java.net.URI;
 
 public record JmsSpyPreferences(String brokerHost, int brokerPort, String username, String subscribeDestination,
         boolean appendMode, boolean darkMode, String publishDestination, int jolokiaPort, String jolokiaPath,
-        String addressSearchMbean, boolean virtualService, boolean formatJson)
+        String addressSearchMbean, boolean virtualService, boolean formatJson, boolean anonymousLogin)
 {
 
     static final int DEFAULT_BROKER_PORT = 61616;
@@ -13,7 +13,7 @@ public record JmsSpyPreferences(String brokerHost, int brokerPort, String userna
     {
         return new JmsSpyPreferences(defaultBrokerHost(), defaultBrokerPort(), defaultUsername(), "", true, false,
                 "", JolokiaClient.DEFAULT_JOLOKIA_PORT, JolokiaClient.DEFAULT_JOLOKIA_PATH,
-                JolokiaClient.DEFAULT_ADDRESS_SEARCH_MBEAN, false, false);
+                JolokiaClient.DEFAULT_ADDRESS_SEARCH_MBEAN, false, false, false);
     }
 
     /**

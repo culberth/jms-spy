@@ -58,6 +58,8 @@ public class PrimaryController
     @FXML
     private CheckBox virtualServiceCheckBox;
     @FXML
+    private CheckBox anonymousLoginCheckBox;
+    @FXML
     private TextField usernameField;
     @FXML
     private PasswordField passwordField;
@@ -101,7 +103,10 @@ public class PrimaryController
         brokerPortField.setText(String.valueOf(preferences.brokerPort()));
         virtualServiceCheckBox.setSelected(preferences.virtualService());
         brokerPortField.setDisable(preferences.virtualService());
+        anonymousLoginCheckBox.setSelected(preferences.anonymousLogin());
         usernameField.setText(preferences.username());
+        usernameField.setDisable(preferences.anonymousLogin());
+        passwordField.setDisable(preferences.anonymousLogin());
         if (!preferencesStore.hasSavedConfig())
         {
             passwordField.setText(JmsSpyPreferences.defaultPassword());
@@ -124,6 +129,12 @@ public class PrimaryController
         virtualServiceCheckBox.selectedProperty().addListener((observable, wasSelected, isSelected) ->
         {
             brokerPortField.setDisable(isSelected);
+            savePreferences();
+        });
+        anonymousLoginCheckBox.selectedProperty().addListener((observable, wasSelected, isSelected) ->
+        {
+            usernameField.setDisable(isSelected);
+            passwordField.setDisable(isSelected);
             savePreferences();
         });
     }
@@ -218,16 +229,20 @@ public class PrimaryController
                 ? String.valueOf(JmsSpyPreferences.DEFAULT_BROKER_PORT)
                 : brokerPortField.getText();
         var brokerUrl = "tcp://" + brokerHostField.getText() + ":" + brokerPort;
+        // Anonymous Login always wins over whatever's left typed in the fields, matching how
+        // Virtual Service overrides brokerPortField's own text rather than requiring it be cleared.
+        var username = anonymousLoginCheckBox.isSelected() ? "" : usernameField.getText();
+        var password = anonymousLoginCheckBox.isSelected() ? "" : passwordField.getText();
         try
         {
-            jmsConnectionService.connect(brokerUrl, usernameField.getText(), passwordField.getText());
+            jmsConnectionService.connect(brokerUrl, username, password);
             connectButton.setText("Disconnect");
             setConnectionStatus("Connected to " + brokerUrl, STATUS_SUCCESS_STYLE_CLASS);
             listenButton.setDisable(false);
             publishButton.setDisable(false);
             setConnectionFieldsDisabled(true);
             savePreferences();
-            refreshDestinationList(brokerHostField.getText(), usernameField.getText(), passwordField.getText());
+            refreshDestinationList(brokerHostField.getText(), username, password);
         }
         catch (JMSException | RuntimeException ex)
         {
@@ -238,17 +253,18 @@ public class PrimaryController
 
     /**
      * The broker connection details can't be changed without disconnecting first, so they're
-     * locked while connected. brokerPortField is a special case: re-enabling it on disconnect
-     * would ignore Virtual Service's own claim on that field, so it's only re-enabled here when
-     * Virtual Service is unchecked.
+     * locked while connected. brokerPortField/usernameField/passwordField are special cases:
+     * re-enabling them on disconnect would ignore Virtual Service's/Anonymous Login's own claim
+     * on those fields, so each is only re-enabled here when its owning checkbox is unchecked.
      */
     private void setConnectionFieldsDisabled(boolean disabled)
     {
         brokerHostField.setDisable(disabled);
         brokerPortField.setDisable(disabled || virtualServiceCheckBox.isSelected());
         virtualServiceCheckBox.setDisable(disabled);
-        usernameField.setDisable(disabled);
-        passwordField.setDisable(disabled);
+        anonymousLoginCheckBox.setDisable(disabled);
+        usernameField.setDisable(disabled || anonymousLoginCheckBox.isSelected());
+        passwordField.setDisable(disabled || anonymousLoginCheckBox.isSelected());
     }
 
     /**
@@ -449,6 +465,7 @@ public class PrimaryController
                 jolokiaPath,
                 addressSearchMbean,
                 virtualServiceCheckBox.isSelected(),
-                formatJsonCheckBox.isSelected()));
+                formatJsonCheckBox.isSelected(),
+                anonymousLoginCheckBox.isSelected()));
     }
 }

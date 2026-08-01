@@ -56,7 +56,8 @@ class UserPreferencesStore
                 properties.getProperty("jolokiaPath", JolokiaClient.DEFAULT_JOLOKIA_PATH),
                 properties.getProperty("addressSearchMbean", JolokiaClient.DEFAULT_ADDRESS_SEARCH_MBEAN),
                 Boolean.parseBoolean(properties.getProperty("virtualService", "false")),
-                Boolean.parseBoolean(properties.getProperty("formatJson", "false")));
+                Boolean.parseBoolean(properties.getProperty("formatJson", "false")),
+                Boolean.parseBoolean(properties.getProperty("anonymousLogin", "false")));
     }
 
     /**
@@ -113,6 +114,7 @@ class UserPreferencesStore
         properties.setProperty("addressSearchMbean", preferences.addressSearchMbean());
         properties.setProperty("virtualService", Boolean.toString(preferences.virtualService()));
         properties.setProperty("formatJson", Boolean.toString(preferences.formatJson()));
+        properties.setProperty("anonymousLogin", Boolean.toString(preferences.anonymousLogin()));
 
         try
         {

@@ -63,8 +63,9 @@
         <PasswordField fx:id="passwordField" GridPane.rowIndex="1" GridPane.columnIndex="3"/>
     </GridPane>
 
-    <HBox alignment="CENTER_LEFT">
+    <HBox alignment="CENTER_LEFT" spacing="15.0">
         <CheckBox fx:id="virtualServiceCheckBox" text="Virtual Service (DNS host name only, no port)"/>
+        <CheckBox fx:id="anonymousLoginCheckBox" text="Anonymous Login"/>
     </HBox>
 
     <HBox alignment="CENTER_LEFT" spacing="10.0">
