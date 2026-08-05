@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Owns the lifecycle of a single JMS connection/session/consumer(s) to an Artemis broker.
@@ -65,7 +66,7 @@ class JmsConnectionService
         }
     }
 
-    synchronized void publish(String destinationName, String body) throws JMSException
+    synchronized void publish(String destinationName, String body, Map<String, String> properties) throws JMSException
     {
         if (session == null)
         {
@@ -75,7 +76,12 @@ class JmsConnectionService
         Destination destination = session.createTopic(destinationName);
         try (MessageProducer producer = session.createProducer(destination))
         {
-            producer.send(session.createTextMessage(body));
+            var message = session.createTextMessage(body);
+            for (var property : properties.entrySet())
+            {
+                message.setStringProperty(property.getKey(), property.getValue());
+            }
+            producer.send(message);
         }
     }
 

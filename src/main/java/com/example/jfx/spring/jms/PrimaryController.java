@@ -28,8 +28,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -80,9 +84,13 @@ public class PrimaryController
     @FXML
     private TextArea messageArea;
     @FXML
+    private TextArea messagePropertiesArea;
+    @FXML
     private ComboBox<String> publishDestinationCombo;
     @FXML
     private TextArea messageToPublishArea;
+    @FXML
+    private TextArea messagePropertiesToPublishArea;
     @FXML
     private Button publishButton;
     @FXML
@@ -149,6 +157,7 @@ public class PrimaryController
     private void clearOutput()
     {
         messageArea.clear();
+        messagePropertiesArea.clear();
     }
 
     @FXML
@@ -368,7 +377,8 @@ public class PrimaryController
 
         try
         {
-            jmsConnectionService.publish(destination, messageToPublishArea.getText());
+            var properties = parsePropertiesToPublish(messagePropertiesToPublishArea.getText());
+            jmsConnectionService.publish(destination, messageToPublishArea.getText(), properties);
             publishStatusLabel.setText("Published to " + destination);
             savePreferences();
         }
@@ -379,6 +389,31 @@ public class PrimaryController
         }
     }
 
+    /**
+     * Parses "name = value" lines from the Properties tab into a map; blank lines and lines
+     * without an "=" (still being typed, or just stray whitespace) are silently skipped rather
+     * than rejecting the whole publish.
+     */
+    private static Map<String, String> parsePropertiesToPublish(String text)
+    {
+        var properties = new LinkedHashMap<String, String>();
+        for (var line : text.split("\\R"))
+        {
+            if (!StringUtils.hasText(line) || !line.contains("="))
+            {
+                continue;
+            }
+            var parts = line.split("=", 2);
+            var name = parts[0].trim();
+            var value = parts[1].trim();
+            if (StringUtils.hasText(name))
+            {
+                properties.put(name, value);
+            }
+        }
+        return properties;
+    }
+
     private void onMessageReceived(Message message)
     {
         // extractContent reads formatJsonCheckBox, a JavaFX control, so the whole line has to be
@@ -386,13 +421,17 @@ public class PrimaryController
         Platform.runLater(() ->
         {
             var line = "[" + extractDestinationName(message) + "] " + extractContent(message);
+            var propertiesBlock = "[" + extractDestinationName(message) + "]" + System.lineSeparator()
+                    + extractProperties(message);
             if (appendRadio.isSelected())
             {
                 messageArea.appendText(line + System.lineSeparator());
+                messagePropertiesArea.appendText(propertiesBlock + System.lineSeparator());
             }
             else
             {
                 messageArea.setText(line);
+                messagePropertiesArea.setText(propertiesBlock);
             }
         });
     }
@@ -428,6 +467,36 @@ public class PrimaryController
         {
             log.error("Failed to read message content", ex);
             return "<unreadable message: " + ex.getMessage() + ">";
+        }
+    }
+
+    private String extractProperties(Message message)
+    {
+        try
+        {
+            var names = new ArrayList<String>();
+            var propertyNames = message.getPropertyNames();
+            while (propertyNames.hasMoreElements())
+            {
+                names.add((String) propertyNames.nextElement());
+            }
+            if (names.isEmpty())
+            {
+                return "<no properties>";
+            }
+            names.sort(Comparator.naturalOrder());
+            var builder = new StringBuilder();
+            for (var name : names)
+            {
+                builder.append(name).append(" = ").append(message.getObjectProperty(name))
+                        .append(System.lineSeparator());
+            }
+            return builder.toString().stripTrailing();
+        }
+        catch (JMSException ex)
+        {
+            log.error("Failed to read message properties", ex);
+            return "<unreadable properties: " + ex.getMessage() + ">";
         }
     }
 

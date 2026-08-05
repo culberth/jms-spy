@@ -99,7 +99,14 @@
                     <CheckBox fx:id="formatJsonCheckBox" text="Format JSON"/>
                 </HBox>
 
-                <TextArea fx:id="messageArea" editable="false" wrapText="true" VBox.vgrow="ALWAYS"/>
+                <TabPane VBox.vgrow="ALWAYS">
+                    <Tab text="Body" closable="false">
+                        <TextArea fx:id="messageArea" editable="false" wrapText="true"/>
+                    </Tab>
+                    <Tab text="Properties" closable="false">
+                        <TextArea fx:id="messagePropertiesArea" editable="false" wrapText="true"/>
+                    </Tab>
+                </TabPane>
             </VBox>
         </Tab>
 
@@ -115,8 +122,15 @@
                               HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
                 </HBox>
 
-                <TextArea fx:id="messageToPublishArea" promptText="Message body to send" wrapText="true"
-                          VBox.vgrow="ALWAYS"/>
+                <TabPane VBox.vgrow="ALWAYS">
+                    <Tab text="Body" closable="false">
+                        <TextArea fx:id="messageToPublishArea" promptText="Message body to send" wrapText="true"/>
+                    </Tab>
+                    <Tab text="Properties" closable="false">
+                        <TextArea fx:id="messagePropertiesToPublishArea" promptText="name = value, one per line"
+                                  wrapText="true"/>
+                    </Tab>
+                </TabPane>
 
                 <HBox alignment="CENTER_LEFT" spacing="10.0">
                     <Button fx:id="publishButton" text="Publish" onAction="#publish" prefWidth="110.0"
